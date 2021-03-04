@@ -1,0 +1,433 @@
+
+  @tr0yster  @TheAntlady @lshillman @gizmomathboy @refrag @commiegir
+
+ rsync -r /home/scott/projects/roborally --verbose --exclude='orig/' --exclude='2016_Boards/' scott@45.79.14.228:/home/scott/
+
+resources:
+
+https://www.ultraboardgames.com/robo-rally/cards.php
+https://boardgamegeek.com/thread/84988/robot-lasers -- robot lasers fire at about the same time as board lasers without any choice or action on part of the players
+https://www.thealexandrian.net/creations/roborally/roborally-ultimate-collection-rulebook.pdf
+https://gist.github.com/scottwalters/cf593dbe91764f95946e7be68f4ca84d
+
+release notes/rule nits:
+
+x. many upgrades are missing.
+x. some things happen automatically but many don't, which is sure to be confusing.
+x. manual:  placing your robot (including rotating it) and putting it back on the board after it falls off. refreshing the upgrade shop. buying anything from the upgrade shop (move energy to the bank, take the card and place it on your upgrades dock)
+x. manual:  voluntarily rebooting your robot is manually done but there isn't a reboot token yet.
+x. semi-automatic, triggered by dropping the dog on a pad:  dealing 9 cards (10 if you have the memory stick), playing through 5 registers then discarding your hand and the register cards
+x. conveyer belts:  double-speed don't go first. if completely full of objects and robots, or very full, it can deadlock and not move anyone.
+x. not applying $shoot_through_walls, $double_barrel_laser to rear facing lasers (rules not immediately clear to me/can be changed)
+x. tractor beam engages every other laser fired (eg, register 2, 4, 1, 3, 5, 2, 4...)
+x. presser beam engages every third laser fired
+x. teleporter doesn't yet correctly handle swapping places with another robot if you'd land on it
+x. deflector shield automatically engages and spends energy even when it may not optimal to do so
+x. when someone drops energy on the energy bank, there's a notification, but you can't see or interact with the energy (short of Firebug'ing it).  in general, once hidden, objects don't yet ever unhide.  todo.
+x. you don't actually get checkpoint tokens yet.
+
+upgrade card with manual operations:
+
+x. defrag gizmo is a manual operation.  after dealing yourself cards (manually or using the dog), move a spam to the perm discard and draw another card, re-shuffling your discard (using the dog) to replenish it if exhausted.
+x. upgrade-recharge.png
+x. upgrade-spamblocker.png
+x. upgrade-recompile.png
+
+
+still missing, much of which I don't care about:
+life tokens -- four (lots of players) or three life tokens
+damage tokens -- for each damage token a robot has, they get one fewer than 9 cards
+powerdown token -- before the round starts a player may announce they will powerdown at the end of the round by placing the powerdown token on the sheet.  at the beginning of the next round, they discard all damage tokens.  confusing.
+radiation
+repair sites
+checkpoints take affect after robot laser fire which includes tractor and presser beams
+drains, repulser fields, ledges, oil slicks, ramps, trap doors, water
+radioactive waste, flamers (only active on some phases) -- give 1 point of damage
+repair sites -- robot places their archive marker there (restore point); I guess the repair is queued for the end of the turn which is dumb; robot should repair at the end of the phase
+chop shop -- various decisions
+radio active waste in addition to causing damage gives the robot an option card when they end on it
+1 fewer program cards per damage token
+5 damage tokens or more and registers start to lock one by one starting at the right
+robot destroyed on 10th damage point, where it discards a life token
+can chose to discard an option card to avoid taking a damage point
+explosions -- deal half damage for square away from the center
+deciding when extra/replacement weapons fire
+flat devices, flying devices, launchers
+flying
+
+
+game rules:
+
+2. CHOOSE ROBOTS: Each player chooses one of the robots and takes the miniature, Archive marker, and Program Sheet for their robot. Place three Life tokens on each player’s Program Sheet and also give them a Power Down token.
+3. FINISH BOARD SET-UP: Put the Damage tokens, Power Down tokens, and Factory Floor Guides next to the board. Shuffle the Program and Option decks and put them next to the board facedown.
+4. PLACE ROBOTS: Deal each player a single Program card. Docking Bay Board: If your course includes a Docking Bay board, the player with the highest priority card places their robot on one of the numbered docks. The player may choose any orientation for their robot. 
+
+Each turn is made up of five register phases. Each turn has the following phases: 1.Deal Program Cards 2.Program Registers 3.Announce Power Down 4.Resolve Register Phases 5.End of Turn Effects
+
+1.  DEAL  PROGRAM  CARDS: Shuffle  the  Program  card  deck  and  deal  the  cards  face  down. Undamaged robots receive 9 cards, but as each robot accumulates damage their ability to accept  programs  is  reduced.  For  each  damage  token  a  robot  has,  deal  that  player  one  fewer  Program card.
+
+2. PROGRAM REGISTERS: Each player chooses the 5 cards that they want to use this turn and puts those cards into the registers on their Program Sheet, face down, from left to right in the order  they’ll  be  executed.  (The  registers  are  numbered  1  to  5.)  Players  discard  any  cards  they  have left over.
+
+3. ANNNOUNCE POWER DOWN: At this point, a player can indicate that they will power down  at  the  end  of  the  turn  by  putting  the  Power  Down  token  on  their  Program  Sheet.  A  robot  that  is  powered  down  discards  all  their  damage  tokens  during  the  Deal  Program  Cards  phase  (i.e., at the beginning of the turn after they announce that they’re going to power down). A  robot  does  not  receive  or  execute  Program  cards  while  powered  down,  but  board  elements and other robots can still affect it and it can still take damage. Do not wipe the registers of a powered down robot until they power up. If  a  player  announces  a  power  down  for  the  next  turn  but  are  destroyed  before  then,  when they return to play they can choose to be either powered down or not. If  a  robot  was  powered  down  on  the  current  turn,  a  player  may  decide  to  leave  them  powered down at the end of the turn (because of new damage tokens, for example). 
+
+4. RESOLVE REGISTER PHASES DOWN: See Register Phases on page 5. 
+
+5. END OF TURN EFFECTS: Once all five register phases have been completed, it’s time to clean up the mess. Complete the following end of turn effects: 
+RADIATION: A robot on a radiation space takes 1 point of damage. 
+REPAIR SITES: A robot on a repair site repairs 1 point of damage. A robot on a double tool repair site also draws 1 Option card. FLAGS: A robot on a flag repairs 1 point of damage. 
+WIPE REGISTERS: Discard all Program cards from registers that aren't locked. 
+CONTINUE  POWER  DOWN:  Players  whose  robots  were  powered  down  this  turn  can  announce that they will remain powered down next turn.
+RETURN ROBOTS TO PLAY: Each robot that was destroyed this turn re-enters play in the  space  containing  its  Archive  marker  and  receives  2  damage  tokens.  (The  player  chooses  which  direction  the  robot  faces.)  If  a  robot  would  re-enter  the  race  on  the  same  space as another robot, they are in Virtual Mode
+
+ULTIMATE ROBORALLY - 5 REGISTER PHASESThere  are  five  register  phases  during  each  turn.  During  each  register  phase,  perform  the  following steps in order: A.Reveal Program Card B.Robot Movement C.Board Elements Move D.Resolve Laser Fire E.Touch Checkpoints 
+
+A. REVEAL PROGRAM CARD: Each player simultaneously reveals his or her Program card for the current register. 
+
+B.  ROBOT  MOVEMENT:  In  the  order  of  their  priority  numbers  (from  highest  to  lowest),  resolve each robot’s Program card. 
+           ^--- I think that's saying that the priority number on th cards decides which robot executes its register first, second, etc.  That's diff than distance to the tower.
+
+BOARD  ELEMENTS:  Robots  being  moved  or  pushed  are  affected  by  Drains,  Flamers,  Ledges,  Oil  Slicks,  One-Way  Walls,  Pits,  Portals,  Ramps,  Repulsor  Fields,  Teleporters,  Trap  Door  Pits,  Walls, and Water. See Board Elements on page 11. 
+
+C.  BOARD  ELEMENTS  MOVE:  During  this  step,  board  elements  move  in  the  following  order.
+
+1.EXPRESS CONVEYOR BELTS: Simultaneously move all robots on an express conveyor belt 1 square in the direction indicated by the arrows on the express conveyor belt. 
+
+2.ALL  CONVEYOR  BELTS:  Simultaneously  move  all  robots  on  a  conveyor  belt  or  an  express  convey  belt  1  square  in  the  direction  indicated  by  the  arrows  on  the  conveyor  belt.  (This  means  that  robots  on  express  conveyor  belts  will  be  moved  by  the  belt  twiceduring the Board Elements Move step.)
+
+CONVEYOR  BELT  MOVEMENT:  All  conveyor  belt  movement  is  simultaneous  and  has  no  priority ranking. Robots being moved by conveyor belts never push other robots. Converging  Belts:  If  two  conveyor  belts  converge  on  the  same  space  and  robots  being  moved by the belts would arrive in the space at the same time, do not move either robot. Rotating  Conveyor  Belts:  Some  conveyor  belts  have  a  curved  arrow,  indicating  a  rotating  section.   A   robot   that’s   moved   onto   a   rotating   conveyor   belt   space   during   conveyor   belt   movement is rotated 90° in the direction indicated by the arrow (as if they were going around the 
+ULTIMATE ROBORALLY - 6corner).  (Note: This  rotation  does  not  happen  if  the  robot  moves  or  is  pushed  onto  the  space  during the Robot Movement phase.
+
+3.CURRENTS:  Simultaneously  move  all  robots  in  a  current  1  square  in  the  direction  indicated  by  the  arrows  on  the  current.  (Current  movement  is  similar  to  conveyor  belt  movement.) 
+
+4.PUSHERS: Pushers activate on the register phases indicated on the pusher. If a pusher is active  during  this  register  phase,  it  will  push  a  robot  1  space  directly  away  from  it.  (Pushers can move multiple robots.)
+
+5.GEARS: Any robot on a gear will rotate 90° in the direction indicated by the arrows on the gear.
+
+6.CRUSHERS:  Crushers  activate  on  the  register  phases  indicated  on  the  crusher.  If  a  crusher  is  active  during  this  register  phase,  any  robot  or  device  on  the  crusher  is  destroyed. 
+
+D.  RESOLVE  LASER  FIRE:  During   this   step   resolve   damage-dealing   effects   in   the   following order. 
+
+1.BOARD  LASERS:  A  robot  in  a  space  that  has  lasers  receives  1  damage  token  for  each  laser in that space. Lasers don't pass through robots, so if multiple robots are in the path of the same beam, only the robot closest to the source of the laser is damaged. 
+
+2.ROBOT LASERS: In addition to the lasers shown on the board, every robot has a main forward-firing laser. All robots fire their lasers and other weapons simultaneously. Robots on the same level can fire on one another, but robots on different levels cannot. 
+
+3.FLAMERS: A robot on an active flamer takes 1 point of damage. (Flamers are only active on the register phases shown on the flamer.) 
+
+4.RADIOACTIVE WASTE: A robot on radioactive waste takes 1 point of damage. 
+
+E. TOUCH CHECKPOINTS: Any robot that’s survived the mayhem to this point and is on a checkpoint “touches” that checkpoint. 
+
+REPAIR SITES: A robot on a repair site places their Archive marker there. (However, they do NOT repair. Robots don’t repair until the end of the turn.) 
+
+FLAGS: Flags mark the course robots must follow to complete the Roborally. A robot on a flag places their Archive marker there and the flag counts towards race victory. (Robots must touch flags in numerical order for them to count towards race victory.) 
+
+CHOP SHOPS: Robots on a chop shop can choose one of three options:  Scrap an Option card they possess and draw a new one to replace it. Replenish the payload of an Option card they possess. If they do not already have an Option card, they can draw one at no cost. 
+
+RADIOACTIVE WASTE: Radioactive waste can activate dormant options on a robot’s chassis. A robot on radioactive waste may draw one Option card. 
+
+DAMAGE AND DESTRUCTION
+
+When a player’s robot is damaged, place a damage token on the robot’s Program Sheet starting with the space farthest to the right on the damage line. 
+
+LOSS OF PROGRAM CARDS: Because being lasered, rammed, pounded, or pushed into a pit tends to affect a robot’s ability to “think”, damaged robots get one fewer Program card for each damage token they have.
+
+LOCKED REGISTERS: If a robot has 5 or more damage tokens, its registers begin to lock up starting with register 5 and working down to register 1. Once a register is locked, the Program card in that register cannot be discarded. (The same card will be executed every turn until the damage token locking that register is removed.) As you repair damage, you must unlock registers in reverse order, from the lowest (register 1) to highest (register 5). A robot with all its registers locked still moves – the Program cards from the previous turn stay in place and that program is simply executed again.
+
+DESTRUCTION: A robot is destroyed when it receives its tenth damage. A robot can also be instantly destroyed by certain board elements or by moving off the edge of the board. When a robot is destroyed, the player discards a Life token. If the robot has any Option cards, the player chooses one option to be destroyed (the Option card is discarded). When the player discards the robot’s last Life token, it’s permanently out of the game. Otherwise, the robot will re-enter play at the end of the turn. 
+
+DAMAGE TOKENS           EFFECT
+0 Dealt 9 Program cards
+1 Dealt 8 Program cards 
+2 Dealt 7 Program cards 
+3 Dealt 6 Program cards 
+4 Dealt 5 Program cards 
+5 Dealt 4 Program cards, lock register 5 
+6 Dealt 3 Program cards, lock registers 5 and 4 
+7 Dealt 2 Program cards, lock registers 5, 4, and 3 
+8 Dealt 1 Program card, lock registers 5, 4, 3, 2, and 1 
+9 Dealt 0 Program cards, lock all registers 
+10                  Destruction!     
+
+EXPLOSIONS: Each explosion is rated with a damage amount. Any robot in the space where the explosion takes place suffers the full damage amount from the explosion. The explosion deals half damage for every space of distance from the original explosion. (For example, an 8-point explosion would deal 2 points of damage to a robot standing two spaces away.) 
+
+The winner is the first player to touch all the flags in order. The game can end as soon as the winner touches the last flag, or play can continue to determine runners-up. 
+
+OTHER BOARD ELEMENTS
+
+OIL  SLICK:  Robots  ending  their  movement  on  an  oil  slick  will  continue  sliding  in the same direction until they are either no longer on the oil slick, stopped by a wall, or blocked by a robot not on the oil slick.  
+
+ONE-WAY  WALLS:  From  the  red  side  these  are  treated  as  normal  walls  (see  below),  but they are treated as if they don’t exist from the green side. 
+
+PITS: Essentially bottomless shafts. When a robot or device moves or is moved onto or over a pit, the robot is immediately destroyed.
+
+
+
+
+layout:
+
+cards are about  115 x 159 now.
+pads are currently 170 x 118
+upgrade cards are 230 x 320
+
+robot tiles are:
+jpg/bot1.png: PNG image data, 68 x 71, 8-bit/color RGB, non-interlaced
+jpg/bot2.png: PNG image data, 71 x 72, 8-bit/color RGB, non-interlaced                      ... standardizing on 69x69
+jpg/bot3.png: PNG image data, 69 x 70, 8-bit/color RGB, non-interlaced
+
+file 2016_SpinZone_69x.png 2005startb_69x.png 2005starta_69x.png 
+2016_SpinZone_69x.png: PNG image data, 828 x 828, 8-bit/color RGB, non-interlaced                828 / 12 = 69, 276 / 12 = 69
+2005startb_69x.png:    PNG image data, 276 x 828, 8-bit/color RGB, non-interlaced
+2005starta_69x.png:    PNG image data, 276 x 828, 8-bit/color RGB, non-interlaced
+
+pnmcat -leftright 2005startb_69x.ppm 2016_SpinZone_69x.ppm | pnmtopng > startb_and_spinzone.png
+
+past the game board:
+move request: id: card008 x: 16 y: 1041
+
+done:
+
+v/ board needs to be larger... better board images in 2016_Boards
+v/ first bot you move is yours and what your register cards control
+v/ command to give a card a colored border (per player)... assigning #6, and #7 for removing the boarder
+v/ #8, cards in your dock are hidden from others... command to hide/show a card (per player) (cards moved in to the docker area may be hidden)  .style.display = block/none... as part of the move command as indicated by show_only
+v/ move should unhide... 
+v/ dropping cards on the pad show reveal them
+v/ dock hiding cards from other players / hidden area for the current player's cards
+v/ bots
+v/ card back image
+v/ rotate self left/right buttons, needed to aim the bot initially 
+v/ pads should be a flavor of card
+v/ figure out where how things line up on the board so we can tell where the robot is at and also move it
+v/ button to start the simulation/animation
+v/ button or something to scatter or re-scatter checkpoints
+v/ get coordinates of the five register slots and make the player tray recognize cards in each slot
+v/ simulation needs logic to look through all cards, identify everything on the board, and figure out the x,y position it's at as part of combining the perm map with the violitile map
+v/ per player move decks... that took some debugging and fixing.
+v/ lasers
+v/ need a pad to shuffle discard on to our draw pile
+v/ need a way to add spam to player->cards... $player->add_card() method maybe
+v/ bots shoot lasers too, not just walls
+v/ discard pile that's sep from the register reject pile, and after running a round, throw cards in to discard
+v/ shuffle discard pile and discard pile only on to where the draw pile goes
+v/ I guess robots all fire lasers at the same time the board lasers fire?  (D.  RESOLVE  LASER  FIRE above seems to suggest so and I don't see a "fire lasers" card)
+v/ spam cards (at least) added to the top of the player's deck when they take damage; don't have individual decks right now so maybe it should just go on to their mat, face up, not in the discard pile
+v/ automate discard, re-shuffle, draw for movement cards
+v/ boards don't have flags on them and instructions suggest random placement so need flags and placement
+v/ simulation; robots activate in antenna priority order
+v/ tile type info for the board
+v/ after the simulation runs, take cards from the registers the disused cards and put them in the per-player discard... player needs to draw all new cards for the next round
+v/ energy cube on any energy space at the end of the 5th register
+v/ energy cubes that are actually items on the board and get picked when you end your register there
+v/ energy cubes (players get 5 each), 
+v/ space logically part of the dock for the player's hand and any other piles
+v/ jpg/crate.png would be fun if conveyers coming in from offscreen randomly got one of these now and then
+v/ crate needs to be moved by the conveyer
+v/ deck of upgrades
+v/ blocks you can push
+v/ spam dropped on us should be added to our cards even tho it wasn't automatically assigned to us
+v/ need an energy reserve pool anyway to add energy to a player... currently card->new, board->add_card has to be run before the board is loaded.
+v/ upgrades pad below the player mat, then handle upgrades like we handle registers during simulate
+v/ need a method to return an energy from the player back to the bank for upgrades that require power.  ok, player->spend_energy(num)
+v/ defrag gizmo... need a perm discard pad and this can be a manual operation
+v/ special movement cards deck
+v/ add the deck of the few special movement cards we have and make sure that they get added to $player->cards when dropped on the player's mat
+v/ upgrades (where possible, or substitutes; one face up per player as of the start of each round)
+v/ the six special programming cards (where possible, or with other cards than standard) 
+v/ track the cards on a player's dock, or else be able to quickly identify them via overlap ... flow is draw 9 (minus damage) before programming, program the 5 slots, discard remaining cards, play, then I assume discard register cards
+v/ track checkpoints and check for them on phase 5 after checking everything else... using standing_on() to do this
+v/ console
+v/ ending register 5 on a flag repairs 1 damage
+v/ need a card that is just the console:  $console.  $console->log(msg);
+v/ console needs scrollbars and to scroll to the bottom on output
+v/ just copy and edit this board and add a conveyer coming on from off-board.
+
+upgrades done:
+
+v/ upgrade-tractorbeam.png
+v/ presser beam:  you may push any robot you shoot one space in the direction you are shooting; 3  [would have to always push, or push randomly, or push every 3rd shot or something like that]  upgrade-pressorbeam.png
+v/ double barrel laser:  deal one additional spam damage card to any robot you shoot; 2   upgrade-doublebarrellaser.png
+v/ rail gun:  shoot through any number of walls and robots; costs 2    upgrade-railgun.png
+v/ defrag gizmo:  each round, permenantly discard one damage card from your hand and draw a replacement card from the top of your deck; 5 upgrade-defrag.png; this is a manual operation
+v/ firewall:  take no spam damage when rebooting; costs 3  upgrade-firewall.png
+v/ memory stick:  draw one additional programming card at the start of each round; 3 upgrade-memorystickc.png
+v/ teleporter:  costs 1 energy to ignore an obstacle; costs 3   upgrade-teleporter.png; XXX tho swapping places with another robot if you'd land on it isn't implemented
+v/ upgrade-rearlaser.png rear laser: your robot may shoot backward as well as forward; 2
+v/ ramming gear:  deal one spam when you push a robot; costs 2     upgrade-ramminggear.png   [could do a version of this where you deal spam damage when you get pushed XXX]
+v/ deflector shield:  spend one energy to negate robot attacks made on you for this register; 2 upgrade-deflectershield.png
+
+upgrade cards/perm for sale in the little market holding off on:
+
+#. scrambler:  if you attack a robot, that player replaces the card in their next register with the top card of their deck, unless the next register is the final register; 3  [not clear what "attack" is here] upgrade_scrambler.png; do-able
+#. hover unit: your robot can pass over, but not land on, pits; 1  [no pits on the first map] upgrade_hoverunit.png
+#. corruption wave:  you may put spam damage cards you deal on top of oppenets' decks; 4 upgrade-corruptionwave.png [hard to put things on other people's decks]
+#. reverse ramming gear:  deal one spam when a robot pushes you (made up counterpart to upgrade-ramminggear)
+
+beyond roborally:
+
+o. sjg car wars rules/features could work too
+o. would be nice if people could upload images and create tiles on the fly that way
+o. would love to evolve this in to a long running zombie/dungeon keeper building/fortress game... that would be hard tho.  need power balance... control of local resources that the enemy can't access unless taken over somehow.
+
+game play improvements:
+
+o. shelving unit that when hit drops a few crates in the area
+o. able to push or destroy certain pieces of equipment with a modified movement card (forwrd 1 plus high beam laser)
+o. and more interactive board features, with things that trigger/flip/change state?
+o. anything and everything from Autoduel
+o. balance from Transformice?
+o. boxes you can push that continue to slide with some degree of friction depending on how fast you pushed them, maybe absorb some move (ie if pushed at 3, you only move 1 or 2) and store energy that can push other bots if still moving fast
+o. building square by square over pits... maybe by picking up and running materials
+o. bumps (from other robots or other things) make you skip a card or do a random card in its place?  maybe at move 3 speed?  requires a diff ram upgrade card?
+o. cards that change what's on the map plus move forward one
+o. cards that do intentigent-ish conditionals
+o. cards that let you decide things should be somewhat intelligent as possible or if not possible to do that, tap the card left or right to pick one of two options   
+o. chip's challenge probably has a few ideas for fun tile types to put on a game board
+o. conditional branch that either does a move 1 action or else if condition is met, branches to a 2nd register and executes from there?
+o. could steal fireflies from boulderdash
+o. earth to tunnel in (movement half or less to tunnel, then considered clear) (maybe some kind of generic packaged product instead of earth)
+o. explosions scattering debris
+o. having to push around stuck-together tetris-like shapes made out of boxes to make passage on a board
+o. instead of moving, move cards should change speed, or else maybe in addition to moving have a set speed/increase card
+o. laser sentries already on the board, that can be pushed *and* shoot lasers
+o. laser sentries you can drop, as an action card, that can be pushed *and* shoot lasers
+o. magnets that latch on to you and drain energy for a cycle or two
+o. mirror chaff you can drop with a move card that's invisible but reflects lasers back from all directions and maybe goes away after a while (this and some other things would be more interesting if lasers were fired manually)
+o. maybe you should get to pick 2-3 phases to fire lasers on each turn (or more if you spend energy) instead of it being auto
+o. mirrors that propogate lasers, with a delay
+o. slower moving missile projectiles that propogate at speed 1 and do area damage, with a movement card for firing them
+o. pacman warp tunnels but I guess there are already portals in the game in theory
+o. power cords to things on the map that can be pulled or broken for action at a distance... kind of like switches I guess... map should slowly go to hell as people play on it
+o. push boxes with momentum where the pushed box slowly slows down and bases its initial speed on the bot's current move 1/2/3 when the bot hit it
+o. reverse gears/conveyer belts by flipping switches (would require drawing board tiles)
+o. services going out like conveyers when a piece of equipment is rammed, or one thing rammed in to another thing
+o. sliding window where you're working a few moves in advance (maybe first three cards are fixed), with cards randomly chosen from the discard pile to be recycled in to available cards... this simulates HC from CarWars
+o. spilled water (that spreads out recursively up to a max number of tiles) prevents braking; eg if you go from move-2 to move-1, you move-2 then move-2.  requires a robot->last_velocity.
+o. switches that can be shot or bumped to turn on/off or reverse conveyers or open/close doors
+o. things catching fire (idk)
+o. things falling over, like shelving collapsing (combine with tunneling)
+o. tiles that change some or all of your robot's programming (which could be good or bad probably esp depending on the direction you enter from)
+o. gauntlet shiney tiles that magically remove walls (this encourages collective action)
+o. tweak gameplay so that robots start off with more control as robots starting out derpy is kinda silly
+o. water leaks with propogating/spreading water, and similarly, fuel leaks, plus fire... ram a valve and oil or water starts coming out, where water/oil inhibits turning and slowing
+o. water/liquid leaks with propogating/spreading water, and similarly, fuel leaks, plus fire; water inhibits breaking (requiring bots to track their last forward speed, so going to a move 2 to move 1 would stay at move 2)
+o. when taking damage, chance of permenantly losing/discarding the card in the current register?  or a spam card variant that draws then perm discards whatever it drew
+o. collective puzzle solving would be awesome
+o. sketchy wooden planks that collapse in to a pit if too many robots are on it at once
+o. objects that explode a certain number of rounds (across turns) after first being stepped on or rammed in to
+o. ramming certain control panels making a sliding catwalk come out... having to perform actions in part of the board to move further along
+o. crates smashed against walls should drop power cubes
+o. power control panel that can be shot or pushed or something to turn off laser banks
+o. area effect EMP missile that soft-resets robots, causing them to go back to register 1
+o. heat seaking missiles
+o. shelving that knocks crates free... except the crates are as large as the shelf so that probably looks odd
+o. pits hidden crates would be evil
+o. cards that let you decide things should be somewhat intelligent as possible or if not possible to do that, tap the card left or right to pick one of two options
+o. power cords to things on the map that can be pulled or broken for action at a distance... kind of like switches I guess... map should slowly go to hell as people play on it
+o. explosions scattering debris
+o. some temp ugprades do work, like recharge, gain 3 energy, cost 0
+o. scanner/gate combo where you first have to scan at the scanner (stand on that square) then you can go through the gate, but only the last robot to scan can.
+o. building.  multiple robots pointed at the same square playing the same special movement card at the same time to build any given square in the square they're both pointed at.
+o. knackered robots unable to see the board past n squares from themselves?
+o. laser sentinals shooting only one direction at a time
+o. tap move 1/2/3 cards to disable teleport
+o. checkpoints are really kinda keys; if we track the largest sequential one done and also remember the non-sequantial ones, we can treat having stood on a checkpoint as a key for matching numbered gates.
+
+movement cards for sale in the little market via upgrade cards (all of these would require a corresponding upgrade card or else a bunch of copies of a generic pick any one special movement card):
+
+o. made a "subroutine: tap left to turnleft, tap right to turn right, or forward 1" card; implement that
+o. another move 3
+o. another repeat last
+o. rotate towards nearest checkpoint or something smartish idk [we don't know what their next checkpoint is right now]
+o. tap left to turn left, tap right to turn right, else forward 1
+o. maintain current velocity, drop oil
+o. alt presser beam: movement card that fires a projectile that knocks any robot it hits back;   recursive_move() doing     $missile_callback->($robot, $dir)  supports this idea.  doing that to an area would be cool.
+o. shoot a missle that does area damage
+o. upgrade that makes you also rotate a robot when you push it
+
+alternative spam versions:
+
+o. probably move 2, maybe move 1, maybe don't move
+o. probably turn right
+o. probably turn left
+o. move 1 and go back to 1st register
+
+longer list/nice to have/fix:
+
+o. moving a card should probably increase its z so that it lands on top of any other cards it is dropped on
+o. instead of the ajax error pop-up, innerHTML the sync status area with a link to re-try
+o. life tokens/multiple lives/respawn from the last checkpoint
+o. need a way to prune old actions, but if we just truncate the array, sync numbers will be out of whack
+o. pits, pushers, crushers
+o. some cards are larger than others which gives them away a bit
+o. spam variety; cards that instead of having you draw for a replacement card just have a usual move operation with a percentage chance of working/failing
+o. when handling post-move board actions, look for the checkpoints!  but players can keep track of that themselves.
+o. probably need a console log for each player to tell them about taking spam damage etc
+o. if we don't have a console, then we do need the system placing damage tokens; and if not a console maybe generate a series of images of the board that can be made into a gif to show what happened
+o. unit test mode where it doesn't $server->loop maybe, for testing game logic
+o. the whole "deck" process of finding a card in a box, taking off the top or taking one, dropping it somewhere else in a staggered fashion, hiding it or unhiding it should be part of a deck class
+o. energy bank pad unhiding cubes
+o. take_spam_damage should be applied to any object hit by a laser with a 0/1 return to indicate whether that object blocks the laser from going further
+o. dropping energy on the bank (which should be a pad) should de-allocate it from the user
+o. if we deal ourselves 9 cards then immediately deal 9 more, they go under the first/prev set and we can't tell that anything happened
+o. boards where to solve it, you have to push boxes in to pits
+o. friendly names for cards via a card->name method
+o. not fully operational after coming back from storable game snapshot
+o. generate gifs of game play so people can *see* what transpired!
+
+shortlist todo:
+
+o. plumbing, pipes you can missile a hole out of and then drive through with protection from lasers from the sides, leaking water or oil from the hole closest to a certain end of the pipe
+o. reboot token
+o. is the board individual tiles or one big one with a map of special things to go with it?  one big thing for now but given a config of which tile is which, it'll be easier to build a board from config later
+o. scan double barrel laser, rail gun which got missed originally
+o. add homemade movement and spam cards, and shuffle the spam deck: card-subroutine.png card-gotoreg2spam.png card-probablyrightspam.png card-probablyleftspam.png card-variablemovespam.png
+o. build a board image out of tiles and hand out the task of making boards to the players between games
+o. water/liquid leaks with propogating/spreading water, and similarly, fuel leaks, plus fire; water inhibits breaking (requiring bots to track their last forward speed, so going to a move 2 to move 1 would stay at move 2)
+o. dropping upgrades on the perm discard should dissasociate them from you
+o. may make sense to add some duplicate powerups to the deck since it's a reduced set
+o. teleporting on top of another robot isn't handled correctly
+
+
+XXX crate def should not initially be on the board (at least not visible... shared obj do have to exist at start currently) but should appear when a shelf or something is hit
+
+XXX some screenshot docs
+
+
+v/ test on slowass.net
+
+
+            push @new_actions, { id => $action->card->id, command => 10, text => $action->text, };
+"scott (bot2) moved n to 6" ... $robot->name could be nicer.
+XXX more things going to the console... turns, getting rotated, getting shot with lasers, drawing, etc
+
+
+
+XXX CGI is a Continuity dep
+
+XXX "Conveyer es rotated us right. " -- correct that to refer to the obj and also crates shouldn't output this, or moves.
+
+XXX checkpoint handling doesn't make sure that you've done the previous checkpoints
+
+XXX chat window.
+
+XXX robots go under checkpoints.  robots should probably usually be on top of things.
+
+XXX report of going through walls
+robot HammerBot (scott) teleported through a wall e before leaving the tile
+
+    my $has_teleporter = $robot->player and $robot->player->has_upgrade('upgrade-teleporter');
+die "has teleporter"; # XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+    my $has_teleporter = $robot->player and $robot->player->has_upgrade('upgrade-teleporter');
+die "XXXXX has teleporter = $has_teleporter and there are this many ugprades: " . scalar  $robot->player->upgrades; # XXXXXXXXXXXx
+XXXXX has teleporter = player=HASH(0x32bf7191b50) and there are this many ugprades: 0 at ./roborally.pl line 443.
+
+scott@fluffy:/tmp$ perl -e '$x = ( 1 and 0 ); print $x;'
+0scott@fluffy:/tmp$ perl -e '$x = ( 1 and 3 ); print $x;'
+3scott@fluffy:/tmp$ 
+
+
+XXX unit tests
+
+XXX in addition to $board->cards, $board->robots that does that grep { $_->isa('robot') } we keep doing.
+
+XXX action message type to make something visible again.
