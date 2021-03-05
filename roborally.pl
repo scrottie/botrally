@@ -461,7 +461,7 @@ sub recursive_move {
     (my @obj) = sort { $a->z > $b->z } grep { $_->row == $future_row and $_->col == $future_col }  $objects->@*;
     my $dest_tile = $board->tiles->[ $future_row ]->[ $future_col ];
 
-    # the posibilities for the tile we're trying to move in to are 1. something we can move in to 2. another robot 3. a wall 4. off the board or a pit which is basically 2
+    # the poissibilities for the tile we're trying to move in to are 1. something we can move in to  2. another robot or object with $ob->push_me false  3. a wall  4. off the board or a pit which is basically just #2 
     if( $dest_tile and $dest_tile =~ m/wall_[nswe]*$opdir->{$orientation}$/ ) {
         # wall on the dest tile on the opposite side as the direction we're moving
         if( $has_teleporter ) {
@@ -570,19 +570,13 @@ sub lasers {
         # stop if the laser cannot exist the curent tile
         my $tile = $board->tiles->[ $y ]->[ $x ];
         $tile or last;   # if we went off the top/bottom/side of the board
-        last if $dir eq 'e' and $tile =~ m/wall_[nsw]*${dir}/ and ! $shoot_through_walls_flag;   # east bound laser hitting an east wall prevents the laser from existing this tile.  ignoring nsw walls for the moment.
-        # last if $dir eq 'w' and $tile =~ m/wall_[nse]*w/;
-        # last if $dir eq 'n' and $tile =~ m/wall_[wse]*n/;
-        # last if $dir eq 's' and $tile =~ m/wall_[wne]*s/;
+        last if $dir eq 'e' and $tile =~ m/wall_[nsw]*${dir}/ and ! $shoot_through_walls_flag;   # east bound laser (for example) hitting an east wall prevents the laser from existing this tile.  ignoring nsw walls for the moment.
         # advance to the next tile
         $x += $x_delta; $y += $y_delta;
         $tile = $board->tiles->[ $y ]->[ $x ];
         last unless $tile;
         STDERR->print("laser firing $dir continues to $x, $y on a tile $tile\n");
-        # last if $x < 0 or $y < 0 or $x > 15 or $y > 11;   # XXX ask board for the board size ... redundant with checking for a tile at least for the simple case where where we only step one step off the edge
-        last if $dir eq 'e' and $tile =~ m/wall_[nse]*$opdir->{$dir}/ and ! $shoot_through_walls_flag;   # east bound laser hitting a west wall prevents the laser from entering this tile.  ignoring nse walls for the moment.
-        # last if $dir eq 'n' and $tile =~ m/wall_[wne]*s/;
-        # last if $dir eq 's' and $tile =~ m/wall_[wse]*n/;
+        last if $dir eq 'e' and $tile =~ m/wall_[nse]*$opdir->{$dir}/ and ! $shoot_through_walls_flag;   # east bound laser (for example) hitting a west wall prevents the laser from entering this tile.  ignoring nse walls for the moment.
     }
 }
 
@@ -592,7 +586,7 @@ sub simulate {
     my @objects;   # objects on the board, including and especially robots
 
     for my $card ($board->cards) {
-        if($card->overlaps($board)) {
+        if( $board->on_the_board($card) ) {
             push @objects, $card;
         }
     }
