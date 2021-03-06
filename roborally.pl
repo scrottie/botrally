@@ -19,6 +19,7 @@ use Carp;
 
 use strict;
 use warnings;
+no warnings 'once';
 
 
 #          .__        ___.          .__              __          __          
@@ -263,7 +264,7 @@ my @spam_cards;
 do {
 
     for(1..36) {
-        my $card = card->new( front_img => '/jpg/card-spam.png', back_img => '/jpg/cardbacksilver.png', hid => 0, );
+        my $card = spam->new( front_img => '/jpg/card-spam.png', back_img => '/jpg/cardbacksilver.png', hid => 0, );
         push @spam_cards, $card;
         $board->add($card); 
     }
@@ -375,8 +376,9 @@ my $orientation_for_deltas = {
 
 my $opdir = { n => 's', s => 'n', w => 'e', e => 'w', };
 
-
 # event loop
+
+return 1 if $main::test;
 
 $server->loop;
 
@@ -581,22 +583,16 @@ sub lasers {
 }
 
 sub simulate {
-    my $step = shift;
+    my $step = shift or die;
 
-    my @objects;   # objects on the board, including and especially robots
-
-    for my $card ($board->cards) {
-        if( $board->on_the_board($card) ) {
-            push @objects, $card;
-        }
-    }
+    my @objects = grep $board->on_the_board($_), $board->cards;                              # objects on the board, including and especially robots
 
     STDERR->print("objects on board: " . join(', ', map $_->id, @objects), "\n");
     # map { STDERR->print("object @{[ $_->id ]} at @{[ $_->col ]}, @{[ $_->row ]}\n") } @$objects;
 
     # all robots take their moves in turn
 
-    my @robot_turn_order = reverse sort { abs( $a->row - 8 ) + $a->col < abs( $b->row - 8 ) + $b->col  } grep { $board->on_the_board($_) } grep $_->isa('robot'), @objects;
+    my @robot_turn_order = reverse sort { abs( $a->row - 8 ) + $a->col < abs( $b->row - 8 ) + $b->col  } grep $_->isa('robot'), @objects;
     $console->log("Register $step turn order: " . join(', ', map $_->id, @robot_turn_order) . "\n");
 
     for my $robot (@robot_turn_order) {
@@ -608,18 +604,7 @@ sub simulate {
             next;
         };
 
-        if( ! $board->on_the_board($robot) ) {
-            STDERR->print("robot priority dump: ", $robot->name, ' at ', $robot->col, ', ', $robot->row, " is off the board; skipping");
-            next;
-        }
-
-        my @registers;
-        for my $card ($board->cards) {
-            my $reg = $player->reg_for_card($card);
-            # possible that more than one card will be in a register, but the player object is at least trying to eject the previous card in a register slot when a new one is dropped there
-            $registers[$reg] = $card if defined $reg;
-        }
-
+        my @registers = $robot->player->registers;
         STDERR->print("registers for player @{[ $player->player_id ]}: " . join(', ', map $_ ? $_->front_img : '(undef)', @registers), "\n");
 
         my $card = $registers[$step] or do {
@@ -629,10 +614,9 @@ sub simulate {
 
      drew_replacement_card:
 
-        my $fn = $card->front_img;
-        (my $action = $fn) =~ s{.*/card[_-](.*?)\.(png|jpg)$}{$1};
+        my $action = $card->card_action;
 
-        STDERR->print($robot->name, ' at ', $robot->col, ', ', $robot->row, ' player ', $player->player_id, ' with card ', $card->id, ' with image ', $fn, " with action ${action}\n");
+        STDERR->print($robot->name, ' at ', $robot->col, ', ', $robot->row, ' player ', $player->player_id, ' with card ', $card->id, " with action ${action}\n");
         $console->log("@{[ $robot->name ]} turns over a '$action' card.\n");
         
         if( $action eq 'card-again' or $action eq 'special-repeatroutine' ) {
@@ -641,7 +625,7 @@ sub simulate {
                 next;
             }
             $card = $registers[$step-1];
-            $fn = $card->front_img;
+            $action = $card->card_action;
         }
 
         my $move_num = 0;   # by default, not moving any number of tiles
@@ -655,7 +639,7 @@ sub simulate {
             $orientation = $robot->orientation or die "no orientation";  # n, s, w, or e
             # where we'll move relative our current location if we move one square the direction we are facing
             ($x_delta, $y_delta) = $deltas->{$orientation}->@*;
-            STDERR->print("updated orientation after the robot was rotated or turned: ``$orientation'' x_delta = $x_delta y_delta = $y_delta\n");
+            STDERR->print("orientation: ``$orientation'' x_delta = $x_delta y_delta = $y_delta\n");
         };
         $update_movement_deltas->();
 
@@ -703,7 +687,7 @@ sub simulate {
                 goto drew_replacement_card;
             }
         } else {
-            STDERR->print("don't recognize the ``$action'' action card ``$fn''\n"); # shouldn't happen as only cards in $player->cards are permitted in that player's registers
+            STDERR->print("don't recognize the ``$action'' action card\n"); # shouldn't happen as only cards in $player->cards are permitted in that player's registers
             next;
         }
 
@@ -802,8 +786,8 @@ sub simulate {
 
     # board lasers
 
-    for my $loop_x (0..15) {
-        for my $loop_y (0..11) {
+    for my $loop_x (0..$board->width_tiles_minus_one) {
+        for my $loop_y (0..$board->height_tiles_minus_one) {
             my $x = $loop_x;
             my $y = $loop_y;
             my $tile = $board->tiles->[ $y ]->[ $x ];
@@ -1325,6 +1309,14 @@ sub row :lvalue {           # as above, update y from a board row specified, or 
     }
     return;
 } 
+sub colrow {
+    my $card = shift; my $col = shift; my $row = shift; $card->col = $col; $card->row = $row; 
+    push @actions, action->new( type => 1, card => $card, player_id => 'system', text => "col $col, row $row");   # move
+}
+sub xy {
+    my $card = shift; my $x = shift; my $y = shift; $card->x = $x; $card->y = $y; 
+    push @actions, action->new( type => 1, card => $card, player_id => 'system', text => "$x, $y");   # move
+}
 sub card_width :lvalue { $_[0]->{card_width} }
 sub card_height :lvalue { $_[0]->{card_height} }
 sub show_only :lvalue { $_[0]->{show_only} }          # only show this card to a specific player
@@ -1333,6 +1325,7 @@ sub id :lvalue { $_[0]->{id} }
 sub image { $_[0]->hid ? $_[0]->{back_img} : $_[0]->{front_img} }
 sub front_img :lvalue { $_[0]->{front_img} }
 sub back_img :lvalue { $_[0]->{back_img} }
+sub card_action { my $card = shift; (my $action = $card->front_img) =~ s{.*/card[_-](.*?)\.(png|jpg)$}{$1}; $action; }
 sub hid :lvalue { $_[0]->{hid} }                      # flipped face down
 sub stationary { $_[0]->{stationary} || 0 }
 sub dropped_on_us { }   # function to run when something is dropped overlapping this tile/card/pad, to be defined in a subclass
@@ -1381,7 +1374,7 @@ sub moved {
     my $player = shift;
     # the player who moved the card already has it moved, and we have the new location in the database.
     # either send a move or hide event for other players depending on whether it landed on the player's private pad or not.
-    # XXX adapt this from elsewhere?  shouldn't matter unless mats are in diff locations... return unless $player->player_id eq $self->player_id;    # all player mats are in the same physical space on the board, but moving something on to your mat should only affect your mat
+    # all player mats are in the same physical space on the board, but $player is the person who moved us.
     if( $card->overlaps( $player ) and ! $card->show_only ) {
         $card->show_only = $player->player_id;
         push @actions, action->new( type => 8, card => $card, player_id => $player->player_id, text => $card->x . ', ' . $card->y);   # hide the card for everyone else
@@ -1418,6 +1411,11 @@ sub name {
         return $self->id;
     }
 }
+
+#
+
+package spam;
+use base 'card';
 
 #
 
@@ -1567,7 +1565,8 @@ sub next_z { my $self = shift; (my $start_z) = List::Util::max(grep defined $_, 
 sub on_the_board {
     my $self = shift;
     my $card = shift;
-    return 1 if $card->col >= 0 and $card->col <= 15 and $card->row >= 0 and $card->row <= 11;
+    # STDERR->print("on_the_board: @{[ $card->name ]}:  @{[ $card->col ]} vs @{[ $self->width_tiles_minus_one ]}, @{[ $card->row ]} vs @{[ $self->height_tiles_minus_one ]}\n");
+    return 1 if $card->col >= 0 and $card->col <= $self->width_tiles_minus_one and $card->row >= 0 and $card->row <= $self->height_tiles_minus_one;
 }
 sub tiles {
     # XXX kludge since we're using one big board image instead of individual tiles at the moment
@@ -1591,6 +1590,10 @@ sub tiles {
         [],   # +1 or -1 off the map will index this
     ];
 }
+sub width_tiles {  scalar($_[0]->tiles->[0]->@*) - 1 };   # num tiles wide, minus one for the undef trailing each row that serves as a boundary
+sub height_tiles { scalar($_[0]->tiles->@*) - 1; };      # num tiles high, minus one for the undef trailing all rows that serves as a boundary
+sub width_tiles_minus_one { $_[0]->width_tiles - 1 }    # for when we want to county from 0
+sub height_tiles_minus_one { $_[0]->height_tiles - 1 }
 
 #              ___.           __   
 # _______  ____\_ |__   _____/  |_ 
@@ -1618,7 +1621,6 @@ sub moved {
     $console->log($card->id . " now belongs to " . $player->player_id . "\n");
     $card->highlighted = $player->player_id;
     push @actions, action->new( type => 6, card => $card, player_id => $player->player_id, );  # red border, shown to this player only
-    # XXXX do something to their dock or their view of this robot so they know which one is now associated with them?
 }
 sub step_on { 0 }    # returns 1 to allow robots (or another object) to enter its space via movement routines, 0 to deny
 sub push_me {
@@ -1768,7 +1770,8 @@ sub dropped_on_us {
             # off-board reboot spam damage
             for my $player (grep $_->isa('player'), $board->cards) {
                 my $robot = $player->robot;
-                if( $robot and ( $robot->col < 0 or $robot->col > 15 or $robot->row < 0 or $robot->row > 11 ) ) {
+                # if( $robot and ( $robot->col < 0 or $robot->col > 15 or $robot->row < 0 or $robot->row > 11 ) ) # XXX
+                if( $robot and ! $board->on_the_board($robot) ) {
                     next if $player->has_upgrade('upgrade-firewall');
                     STDERR->print("robot @{[ $robot->name ]} took two spam damage for running off the board and having to reboot\n");
                     $player->take_spam_damage for 1..2;
@@ -2039,6 +2042,7 @@ sub new {
     return $self;
 }
 sub player_id :lvalue { $_[0]->{player_id} }
+sub board { $board }     # test hook
 sub password :lvalue { $_[0]->{password} }
 sub cards { @{ $_[0]->{cards} } }
 sub add_card { my $self = shift; my $card = shift or die; push @{ $self->{cards} }, $card; }
@@ -2102,6 +2106,16 @@ sub remove_energy {
 sub energy_last_x :lvalue { $_[0]->{energy_last_x} }
 sub robot :lvalue { $_[0]->{robot} }    # player's token which for the moment is a robot
 sub checkpoint :lvalue { $_[0]->{checkpoint} }
+sub reg_offsets {
+    return (
+        undef,
+        [16, 314],
+        [168, 314],
+        [327, 314],
+        [482, 314],
+        [636, 314],
+    );
+}
 sub reg_for_card {
     my $self = shift;
     my $card = shift;
@@ -2112,22 +2126,28 @@ sub reg_for_card {
     #card card072 dropped on player's mat at 327, 315 r3
     #card card072 dropped on player's mat at 482, 316 r4
     #card card072 dropped on player's mat at 636, 314 r5
-    return unless $card_y >= 314-30 and $card_y <= 314+30;
+    my @reg_offsets = $self->reg_offsets or die;           # top left corners of the five pads relative to the player mat's top left's x, y
+    my $y_offset = $reg_offsets[1]->[1] or die;            # y coordinate should be the same for all five
+    return unless $card_y >= $y_offset-30 and $card_y <= $y_offset+30;
     return unless grep $card->id eq $_->id, $self->cards;    # only recognize our own movement cards XXXXXXXXXXX testing
     my $reg;
     # places for cards are about 126 pixels apart... allow themm to be 65 pixels off one way or the other
-    if( $card_x >= 16-20 and $card_x <= 16+45 ) {
-        $reg = 1;
-    } elsif( $card_x >= 168-20 and $card_x <= 168+45 ) {
-        $reg = 2;
-    } elsif( $card_x >= 327-20 and $card_x <= 327+45 ) {
-        $reg = 3;
-    } elsif( $card_x >= 482-20 and $card_x <= 482+45 ) {
-        $reg = 4;
-    } elsif( $card_x >= 636-20 and $card_x <= 636+45 ) {
-        $reg = 5;
+    for my $i (1..5) {
+        if( $card_x >= $reg_offsets[$i]->[0]-20 and $card_x <= $reg_offsets[$i]->[0]+45 ) {
+            $reg = $i;
+        }
     }
     return $reg;
+}
+sub registers {
+    my $player = shift;
+    my @registers;
+    for my $card ($player->cards) {
+        my $reg = $player->reg_for_card($card);
+        # possible that more than one card will be in a register, but the player object is at least trying to eject the previous card in a register slot when a new one is dropped there
+        $registers[$reg] = $card if defined $reg;
+    }
+    return @registers;    # the 0th slot will be empty
 }
 sub dropped_on_us {
     my $self = shift;
@@ -2192,6 +2212,7 @@ sub take_spam_damage {
     # make the spam card part of the player's private move action card deck
     $player->add_card($spam);
 }
+sub damage { return scalar grep $_->isa('spam'), $_[0]->cards; }
 sub last_shield_phase :lvalue { $_[0]->{last_shield_phase} }   # track the last phase shields were used on so that we don't get charged twice for the sheilds
 sub presser_beam_counter :lvalue { $_[0]->{presser_beam_counter} }   # counter to fire the presser beam ever n laser shots
 sub tractor_beam_counter :lvalue { $_[0]->{tractor_beam_counter} }   # counter to fire the tractor beam ever n laser shots
