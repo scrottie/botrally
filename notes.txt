@@ -5,12 +5,31 @@
 
 resources:
 
+https://www.ultraboardgames.com/robo-rally/game-rules.php
 https://www.ultraboardgames.com/robo-rally/cards.php
 https://boardgamegeek.com/thread/84988/robot-lasers -- robot lasers fire at about the same time as board lasers without any choice or action on part of the players
 https://www.thealexandrian.net/creations/roborally/roborally-ultimate-collection-rulebook.pdf
 https://gist.github.com/scottwalters/cf593dbe91764f95946e7be68f4ca84d
+http://www.robofactory.de/pages/content/cards.ht 
+http://www.randomdice.com/games/roborally/rrgameboards.asp
+https://tartarus.org/gareth/roborally/boards/Vault
+https://spacebug705671078.wordpress.com/spacebugs-robo-rally-boards/
+https://www.ultraboardgames.com/robo-rally/racing-courses.php
 
 release notes/rule nits:
+
+x. many upgrades are missing.
+x. some things happen automatically but many don't, which is sure to be confusing.
+x. manual:  placing your robot (including rotating it) and putting it back on the board after it falls off. refreshing the upgrade shop. buying anything from the upgrade shop (move energy to the bank, take the card and place it on
+your upgrades dock)
+x. manual:  voluntarily rebooting your robot is manually done but there isn't a reboot token yet.
+x. semi-automatic, triggered by dropping the dog on a pad:  dealing 9 cards (10 if you have the memory stick), playing through 5 registers then discarding your hand and the register cards
+x. conveyer belts:  double-speed don't go first. if completely full of objects and robots, or very full, it can deadlock and not move anyone.
+x. not applying $shoot_through_walls, $double_barrel_laser to rear facing lasers (rules not immediately clear to me/can be changed)
+x. tractor beam engages every other laser fired (eg, register 2, 4, 1, 3, 5, 2, 4...)
+x. presser beam engages every third laser fired
+x. teleporter doesn't yet correctly handle swapping places with another robot if you'd land on it
+x. deflector
 
 x. many upgrades are missing.
 x. some things happen automatically but many don't, which is sure to be confusing.
@@ -331,6 +350,12 @@ o. knackered robots unable to see the board past n squares from themselves?
 o. laser sentinals shooting only one direction at a time
 o. tap move 1/2/3 cards to disable teleport
 o. checkpoints are really kinda keys; if we track the largest sequential one done and also remember the non-sequantial ones, we can treat having stood on a checkpoint as a key for matching numbered gates.
+o. shield generators that protect against enemy laser spam damage with a certain radius but like the portal cell phone game or the zombie web game or imps, you compete for ownership
+o. mining energy somehow; perhaps energy comes in on a conveyer and you want to compete over that
+o. pick up/drop actions that pick up an object (some objects only) immediately in front of you and slow movement
+o. barricades that can only be picked up from one side for building fortifications
+o. explosions don't have to be instant; they can do a missile command thing where they get larger then start shrinking again
+o. one robot has to be actively standing on top of a square to open a door/gate/drawbridge
 
 movement cards for sale in the little market via upgrade cards (all of these would require a corresponding upgrade card or else a bunch of copies of a generic pick any one special movement card):
 
@@ -343,6 +368,7 @@ o. maintain current velocity, drop oil
 o. alt presser beam: movement card that fires a projectile that knocks any robot it hits back;   recursive_move() doing     $missile_callback->($robot, $dir)  supports this idea.  doing that to an area would be cool.
 o. shoot a missle that does area damage
 o. upgrade that makes you also rotate a robot when you push it
+o. protection from being pushed from the side
 
 alternative spam versions:
 
@@ -390,7 +416,7 @@ o. teleporting on top of another robot isn't handled correctly
 
 XXX crate def should not initially be on the board (at least not visible... shared obj do have to exist at start currently) but should appear when a shelf or something is hit
 
-XXX some screenshot docs
+v/ some screenshot docs
 
 
 v/ test on slowass.net
@@ -404,30 +430,45 @@ XXX more things going to the console... turns, getting rotated, getting shot wit
 
 XXX CGI is a Continuity dep
 
-XXX "Conveyer es rotated us right. " -- correct that to refer to the obj and also crates shouldn't output this, or moves.
-
 XXX checkpoint handling doesn't make sure that you've done the previous checkpoints
 
 XXX chat window.
 
 XXX robots go under checkpoints.  robots should probably usually be on top of things.
 
-XXX report of going through walls
-robot HammerBot (scott) teleported through a wall e before leaving the tile
+v/ unit tests
 
-    my $has_teleporter = $robot->player and $robot->player->has_upgrade('upgrade-teleporter');
-die "has teleporter"; # XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-    my $has_teleporter = $robot->player and $robot->player->has_upgrade('upgrade-teleporter');
-die "XXXXX has teleporter = $has_teleporter and there are this many ugprades: " . scalar  $robot->player->upgrades; # XXXXXXXXXXXx
-XXXXX has teleporter = player=HASH(0x32bf7191b50) and there are this many ugprades: 0 at ./roborally.pl line 443.
+XXX action message type to make something visible again (energy, discarded powerups).
 
-scott@fluffy:/tmp$ perl -e '$x = ( 1 and 0 ); print $x;'
-0scott@fluffy:/tmp$ perl -e '$x = ( 1 and 3 ); print $x;'
-3scott@fluffy:/tmp$ 
+v/ $card->rowcol($row, $col), $card->xy($x, $y)  that also generate the move action. -- now use in code.
 
 
-XXX unit tests
+XXX  stuff to test:
+        if( $action eq 'card-again' or $action eq 'special-repeatroutine' ) {
+        if( $action eq 'back' ) {
+        } elsif( $action eq 'left' ) {
+        } elsif( $action eq 'right' ) {
+        } elsif( $action eq 'uturn' ) {
+        } elsif( $action eq 'move1' ) {
+        } elsif( $action eq 'move2' ) {
+        } elsif( $action eq 'move3' or $action eq 'special-speedroutine') {
+        } elsif( $action eq 'spam' ) {
+# convey_dbl_e convey_dbl_es convey_dbl_n convey_dbl_ne convey_dbl_s convey_dbl_sw convey_dbl_w convey_dbl_wn convey_en convey_es convey_n convey_ne convey_s convey_se
+# laser_wall_e laser_wall_n laser_wall_s laser_wall_w
+# open
+# power
+# rotate_left  rotate_right
+# spawn spawn_wall_n spawn_wall_s
+# wall_e wall_n wall_nw wall_s wall_sw wall_w
 
-XXX in addition to $board->cards, $board->robots that does that grep { $_->isa('robot') } we keep doing.
 
-XXX action message type to make something visible again.
+XXX make an animated gif of game play; writing out ppm files and running gifsicle on them would be fine
+... but here are png experiments:
+./old/zombies/slowass.net-rsync-down-minizombies-snap/zombies-misc/pngwrite.pl  -- hey, this works... png.pm might too!
+./old/zombies/slowass.net-rsync-down-minizombies-snap/png.pm
+./old/zombies/slowass.net-rsync-down-minizombies-snap/pngtest.pl
+./old/zombies/png.pm
+./old/zombies/pngtest.pl
+./perl/pngRead.pl
+./perl/pngWrite.pl
+
