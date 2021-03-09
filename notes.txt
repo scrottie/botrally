@@ -259,6 +259,18 @@ v/ ending register 5 on a flag repairs 1 damage
 v/ need a card that is just the console:  $console.  $console->log(msg);
 v/ console needs scrollbars and to scroll to the bottom on output
 v/ just copy and edit this board and add a conveyer coming on from off-board.
+v/ add transparency around robots instead of including floor in the image
+v/ crate def should not initially be on the board (at least not visible... shared obj do have to exist at start currently) but should appear when a shelf or something is hit
+v/ some screenshot docs
+v/ test on slowass.net
+v/ more things going to the console... turns, getting rotated, getting shot with lasers, drawing, etc
+v/ checkpoint handling: make sure that you've done the previous checkpoints
+v/ better checkpoint flags that don't obscure the whole tile
+v/ robots go under checkpoints.  robots should probably usually be on top of things.
+v/ unit tests
+v/ scan double barrel laser, rail gun which got missed originally
+v/ when handling post-move board actions, look for the checkpoints!  but players can keep track of that themselves.
+v/ if we don't have a console, then we do need the system placing damage tokens; and if not a console maybe generate a series of images of the board that can be made into a gif to show what happened
 
 upgrades done:
 
@@ -273,6 +285,9 @@ v/ teleporter:  costs 1 energy to ignore an obstacle; costs 3   upgrade-teleport
 v/ upgrade-rearlaser.png rear laser: your robot may shoot backward as well as forward; 2
 v/ ramming gear:  deal one spam when you push a robot; costs 2     upgrade-ramminggear.png   [could do a version of this where you deal spam damage when you get pushed XXX]
 v/ deflector shield:  spend one energy to negate robot attacks made on you for this register; 2 upgrade-deflectershield.png
+v/ dropping energy on the bank (which should be a pad) should de-allocate it from the user
+v/ friendly names for cards via a card->name method
+v/ generate gifs of game play so people can *see* what transpired! ... with board image snapshots, this can be done manually for now
 
 upgrade cards/perm for sale in the little market holding off on:
 
@@ -356,6 +371,9 @@ o. pick up/drop actions that pick up an object (some objects only) immediately i
 o. barricades that can only be picked up from one side for building fortifications
 o. explosions don't have to be instant; they can do a missile command thing where they get larger then start shrinking again
 o. one robot has to be actively standing on top of a square to open a door/gate/drawbridge
+o. nokia snakes mode where you get a tail of light wall that follows you and blocks lasers
+o. zombies that mindlessly chase your robot but can be blown up with missles and pushed (or I guess some random combo of pushed and run over)
+o. boards where to solve it, you have to push boxes in to pits; also, boxes plugging up pits
 
 movement cards for sale in the little market via upgrade cards (all of these would require a corresponding upgrade card or else a bunch of copies of a generic pick any one special movement card):
 
@@ -377,73 +395,9 @@ o. probably turn right
 o. probably turn left
 o. move 1 and go back to 1st register
 
-longer list/nice to have/fix:
+stuff to test:
 
-o. moving a card should probably increase its z so that it lands on top of any other cards it is dropped on
-o. instead of the ajax error pop-up, innerHTML the sync status area with a link to re-try
-o. life tokens/multiple lives/respawn from the last checkpoint
-o. need a way to prune old actions, but if we just truncate the array, sync numbers will be out of whack
-o. pits, pushers, crushers
-o. some cards are larger than others which gives them away a bit
-o. spam variety; cards that instead of having you draw for a replacement card just have a usual move operation with a percentage chance of working/failing
-o. when handling post-move board actions, look for the checkpoints!  but players can keep track of that themselves.
-o. probably need a console log for each player to tell them about taking spam damage etc
-o. if we don't have a console, then we do need the system placing damage tokens; and if not a console maybe generate a series of images of the board that can be made into a gif to show what happened
-o. unit test mode where it doesn't $server->loop maybe, for testing game logic
-o. the whole "deck" process of finding a card in a box, taking off the top or taking one, dropping it somewhere else in a staggered fashion, hiding it or unhiding it should be part of a deck class
-o. energy bank pad unhiding cubes
-o. take_spam_damage should be applied to any object hit by a laser with a 0/1 return to indicate whether that object blocks the laser from going further
-o. dropping energy on the bank (which should be a pad) should de-allocate it from the user
-o. if we deal ourselves 9 cards then immediately deal 9 more, they go under the first/prev set and we can't tell that anything happened
-o. boards where to solve it, you have to push boxes in to pits
-o. friendly names for cards via a card->name method
-o. not fully operational after coming back from storable game snapshot
-o. generate gifs of game play so people can *see* what transpired!
-
-shortlist todo:
-
-o. plumbing, pipes you can missile a hole out of and then drive through with protection from lasers from the sides, leaking water or oil from the hole closest to a certain end of the pipe
-o. reboot token
-o. is the board individual tiles or one big one with a map of special things to go with it?  one big thing for now but given a config of which tile is which, it'll be easier to build a board from config later
-o. scan double barrel laser, rail gun which got missed originally
-o. add homemade movement and spam cards, and shuffle the spam deck: card-subroutine.png card-gotoreg2spam.png card-probablyrightspam.png card-probablyleftspam.png card-variablemovespam.png
-o. build a board image out of tiles and hand out the task of making boards to the players between games
-o. water/liquid leaks with propogating/spreading water, and similarly, fuel leaks, plus fire; water inhibits breaking (requiring bots to track their last forward speed, so going to a move 2 to move 1 would stay at move 2)
-o. dropping upgrades on the perm discard should dissasociate them from you
-o. may make sense to add some duplicate powerups to the deck since it's a reduced set
-o. teleporting on top of another robot isn't handled correctly
-
-
-XXX crate def should not initially be on the board (at least not visible... shared obj do have to exist at start currently) but should appear when a shelf or something is hit
-
-v/ some screenshot docs
-
-
-v/ test on slowass.net
-
-
-            push @new_actions, { id => $action->card->id, command => 10, text => $action->text, };
-"scott (bot2) moved n to 6" ... $robot->name could be nicer.
-XXX more things going to the console... turns, getting rotated, getting shot with lasers, drawing, etc
-
-
-
-XXX CGI is a Continuity dep
-
-XXX checkpoint handling doesn't make sure that you've done the previous checkpoints
-
-XXX chat window.
-
-XXX robots go under checkpoints.  robots should probably usually be on top of things.
-
-v/ unit tests
-
-XXX action message type to make something visible again (energy, discarded powerups).
-
-v/ $card->rowcol($row, $col), $card->xy($x, $y)  that also generate the move action. -- now use in code.
-
-
-XXX  stuff to test:
+these actions:
         if( $action eq 'card-again' or $action eq 'special-repeatroutine' ) {
         if( $action eq 'back' ) {
         } elsif( $action eq 'left' ) {
@@ -453,6 +407,7 @@ XXX  stuff to test:
         } elsif( $action eq 'move2' ) {
         } elsif( $action eq 'move3' or $action eq 'special-speedroutine') {
         } elsif( $action eq 'spam' ) {
+tile types:
 # convey_dbl_e convey_dbl_es convey_dbl_n convey_dbl_ne convey_dbl_s convey_dbl_sw convey_dbl_w convey_dbl_wn convey_en convey_es convey_n convey_ne convey_s convey_se
 # laser_wall_e laser_wall_n laser_wall_s laser_wall_w
 # open
@@ -461,14 +416,49 @@ XXX  stuff to test:
 # spawn spawn_wall_n spawn_wall_s
 # wall_e wall_n wall_nw wall_s wall_sw wall_w
 
+longer list/nice to have/fix:
 
-XXX make an animated gif of game play; writing out ppm files and running gifsicle on them would be fine
-... but here are png experiments:
-./old/zombies/slowass.net-rsync-down-minizombies-snap/zombies-misc/pngwrite.pl  -- hey, this works... png.pm might too!
-./old/zombies/slowass.net-rsync-down-minizombies-snap/png.pm
-./old/zombies/slowass.net-rsync-down-minizombies-snap/pngtest.pl
-./old/zombies/png.pm
-./old/zombies/pngtest.pl
-./perl/pngRead.pl
-./perl/pngWrite.pl
+o. moving a card should probably increase its z so that it lands on top of any other cards it is dropped on
+o. instead of the ajax error pop-up, innerHTML the sync status area with a link to re-try
+o. life tokens/multiple lives/respawn from the last checkpoint
+o. need a way to prune old actions, but if we just truncate the array, sync numbers will be out of whack
+o. pits
+o. pushers
+o. crushers
+o. some cards are larger than others which gives them away a bit
+o. spam variety; cards that instead of having you draw for a replacement card just have a usual move operation with a percentage chance of working/failing
+o. probably need a console log for each player to tell them about taking spam damage etc
+o. unit test mode where it doesn't $server->loop maybe, for testing game logic
+o. the whole "deck" process of finding a card in a box, taking off the top or taking one, dropping it somewhere else in a staggered fashion, hiding it or unhiding it should be part of a deck class
+o. energy bank pad unhiding cubes
+o. take_spam_damage should be applied to any object hit by a laser with a 0/1 return to indicate whether that object blocks the laser from going further
+o. if we deal ourselves 9 cards then immediately deal 9 more, they go under the first/prev set and we can't tell that anything happened
+o. not fully operational after coming back from storable game snapshot
+o. $card->rowcol($row, $col), $card->xy($x, $y)  that also generate the move action. -- now use in code in most of the places where we set x, then y, then generate an action.
+o. action message type to make something visible again (energy, discarded powerups).
+
+shortlist todo:
+
+o. plumbing, pipes you can missile a hole out of and then drive through with protection from lasers from the sides, leaking water or oil from the hole closest to a certain end of the pipe
+o. reboot token
+o. is the board individual tiles or one big one with a map of special things to go with it?  one big thing for now but given a config of which tile is which, it'll be easier to build a board from config later
+o. add homemade movement and spam cards, and shuffle the spam deck: card-subroutine.png card-gotoreg2spam.png card-probablyrightspam.png card-probablyleftspam.png card-variablemovespam.png
+o. build a board image out of tiles and hand out the task of making boards to the players between games
+o. water/liquid leaks with propogating/spreading water, and similarly, fuel leaks, plus fire; water inhibits breaking (requiring bots to track their last forward speed, so going to a move 2 to move 1 would stay at move 2)
+o. dropping upgrades on the perm discard should dissasociate them from you
+o. may make sense to add some duplicate powerups to the deck since it's a reduced set
+o. teleporting on top of another robot isn't handled correctly
+
+
+
+
+
+XXX CGI is a Continuity dep
+
+XXX chat window.
+
+XXX command shell.
+
+
+
 
