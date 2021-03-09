@@ -49,11 +49,11 @@ sub read {
     substr $png, 0, 8, '';
 
     my $three_pixels = sub {
-        # the pixel to our left,the pixel above us to the left, and the pixel directly above us
+        # the pixel to our left, the pixel above us to the left, and the pixel directly above us
         my $x = $pixelsread % $width;
-        my $p1 = @row ? $row[$x-1] : [ 0, 0, 0 ];
-        my $p2 = @previous_row && @row ? $previous_row[$x-1] : [ 0, 0, 0 ];
-        my $p3 = @previous_row ? $previous_row[$x] : [ 0, 0, 0 ];
+        my $p1 = @row ? $row[$x-1] : [ 0, 0, 0, 0 ];
+        my $p2 = @previous_row && @row ? $previous_row[$x-1] : [ 0, 0, 0, 0 ];
+        my $p3 = @previous_row ? $previous_row[$x] : [ 0, 0, 0, 0 ];
         return ( $p1, $p2, $p3 );
     };
     
@@ -107,7 +107,9 @@ sub read {
             my $data = Compress::Zlib::uncompress( $compresseddatabuffer );
     
             while( length $data ) {
+
                 my $r;  my $g;  my $bl;
+
                 if( ! ( $pixelsread % $width ) ) {
                     # remove the stupid filter method byte
                     $filter = ord substr $data, 0, 1, ''; # "filter"; should be null
@@ -118,63 +120,72 @@ sub read {
                 }
     
                 ($r, $g, $bl) = unpack 'CCC', $data;   substr $data, 0, 3, '';
+                my $alpha = undef;
+                if( $colortype == 6 ) {
+                    # alpha channel
+                    ($alpha) = unpack 'C', $data;
+                    substr $data, 0, 1, '';
+                }
     
                 my $pre_pixel = [$r, $g, $bl];
     
                 if ( $filter == 1 ) {
     
+                    # warn "left";
                     # value of previous pixel was subtracted out
                     my( $aa, $bb, $cc ) = $three_pixels->();
                     $r += $aa->[0]; $g += $aa->[1]; $bl += $aa->[2];
-                    for ($r, $g, $bl) { $_ %= 256 if $_ < 0 or $_ > 255 }
+                    for ($r, $g, $bl) { $_ %= 256 }
+                    if( defined $alpha ) {
+                        $alpha += $aa->[3]; $alpha %= 256;
+                    }
     
                 } elsif ( $filter == 2 ) {
     
+                    # warn "up";
                     # value of above pixel was subtracted out
                     my( $aa, $bb, $cc ) = $three_pixels->();
                     $r += $cc->[0]; $g += $cc->[1]; $bl += $cc->[2];
-                    for ($r, $g, $bl) { $_ %= 256 if $_ < 0 or $_ > 255 }
+                    for ($r, $g, $bl) { $_ %= 256 }
+                    if( defined $alpha ) {
+                        $alpha += $cc->[3]; $alpha %= 256;
+                    }
     
                 } elsif ( $filter == 3 ) {
-    
+
+                    # warn "average";
                     # Average
                     my( $aa, $bb, $cc ) = $three_pixels->();
                     $r += int(($aa->[0] + $cc->[0])/2);  $r %= 256;
                     $g += int(($aa->[1] + $cc->[1])/2);  $g %= 256;
                     $bl += int(($aa->[2] + $cc->[2])/2);  $bl %= 256;
+                    if( defined $alpha ) {
+                        $alpha += int(($aa->[3] + $cc->[3])/2); $alpha %= 256;
+                    }
     
                 } elsif ( $filter == 4 ) {
-    
-                    # Paerth
-                    # This is pretty much directly translated from the libpng source
-                    my( $aa, $bb, $cc ) = $three_pixels->();
-                    ($cc, $bb) = ($bb, $cc);   # changed order; a = left, b = above, c = above-left
-                    my $pixel = [ $r, $g, $bl ];
-                    for my $byte (0..2) {
-                        my $p = $bb->[$byte] - $cc->[$byte];
-                        my $p1 = $aa->[$byte] - $cc->[$byte];
-                        my $pa = abs($p);
-                        my $pb = abs($p1);
-                        my $pc = abs($p + $p1);
+                    # Paeth
+                    # warn "paeth";
+                    my( $aa, $cc, $bb ) = $three_pixels->();    # changed order; a = left, b = above, c = above-left
+                    my $pixel = defined $alpha ? [ $r, $g, $bl, $alpha ] : [$r, $g, $bl];
+                    for my $byte (0..$#$pixel) {
+                        my $p = $aa->[$byte] + $bb->[$byte] - $cc->[$byte];
+                        my $pa = abs($p - $aa->[$byte]);
+                        my $pb = abs($p - $bb->[$byte]);
+                        my $pc = abs($p - $cc->[$byte]);
                         my $value = ($pa <= $pb && $pa <= $pc) ? $aa->[$byte] : ($pb <= $pc) ? $bb->[$byte] : $cc->[$byte];
                         $pixel->[$byte] += $value; 
-                        $pixel->[$byte] %= 256;
+                        $pixel->[$byte] &= 255;
                     }
-                    $r = $pixel->[0]; $g = $pixel->[1]; $bl = $pixel->[2];
-    
+                    $r = $pixel->[0]; $g = $pixel->[1]; $bl = $pixel->[2]; $alpha = $pixel->[3] if exists $pixel->[3];
                 }
-    
-                my $alpha;
+
                 if( $colortype == 6 ) {
-                    # alpha channel
-                    (my $alpha) = unpack 'C', $data;
-                    substr $data, 0, 1, '';
                     push @row, [$r, $g, $bl, $alpha];
                 } else {
                     push @row, [$r, $g, $bl];
                 }
                 $pixelsread++;
-                # print "$r $g $bl\n";  # outputing ppm works
             }
             $add_row_to_img->();   # catch that last line of pixels
             $height * $width != $pixelsread and warn "missing image data?  too much image data?  $pixelsread vs @{[ $height * $width ]} specified";
@@ -225,6 +236,54 @@ sub write {
     return $png;
 }
 
+sub blit {
+    my $target = shift or die;
+    my $img = shift or die;
+    my $x = shift;
+    my $y = shift;
+    $target->isa('png') or die;
+    $img->isa('png') or die;
+
+    my $img_pixel_bytes = ( $img->{colortype} == 2 ? 3 : 4 );
+    my $img_row_bytes = $img->{width} * $img_pixel_bytes + 1;      # each row has a one byte 'filter' leading
+
+    my $target_pixel_bytes = ( $target->{colortype} == 2 ? 3 : 4 );
+    my $target_row_bytes = $target->{width} * $target_pixel_bytes + 1;
+
+    # warn "img_row_bytes = $img_row_bytes target_row_bytes = $target_row_bytes\n";
+
+    my $x__ = 0;   # coords in $img
+    my $y__ = 0;
+
+    for(my $y_ = $y; $y_ < $y + $img->{height}; $y_++ ) { 
+        for(my $x_ = $x; $x_ < $x + $img->{width}; $x_++ ) { 
+            next if $x_ < 0 or $x_ >= $target->{width};
+            next if $y_ < 0 or $y_ >= $target->{height};
+
+            my $pixel = substr $img->{img}, $img_row_bytes * $y__ + $img_pixel_bytes * $x__ + 1, $img_pixel_bytes;
+
+            if( $img_pixel_bytes == 4 ) {
+                # image we're copy has alpha
+                my $alpha = unpack 'C', substr $pixel, 3, 1, '';     # but we always write three bytes and don't change the target alpha
+                my $target_pixel = substr $target->{img}, $target_row_bytes * $y_ + $target_pixel_bytes * $x_ + 1, 3;
+                my ($r1, $g1, $b1) = unpack 'CCC', $pixel;
+                my ($r2, $g2, $b2) = unpack 'CCC', $target_pixel;
+                my $r3 = int((  $r1 * $alpha + ( $r2 * ( 255 - $alpha ) ))/255); $r3 = 255 if $r3 > 255;
+                # warn " int((  $r1 * $alpha + ( $r2 * ( 255 - $alpha ) ))/255) = $r3\n";
+                my $g3 = int((  $g1 * $alpha + ( $g2 * ( 255 - $alpha ) ))/255); $g3 = 255 if $g3 > 255;
+                my $b3 = int((  $b1 * $alpha + ( $b2 * ( 255 - $alpha ) ))/255); $b3 = 255 if $b3 > 255;
+                $pixel = pack 'CCC', $r3, $g3, $b3;
+            }
+
+            substr $target->{img}, $target_row_bytes * $y_ + $target_pixel_bytes * $x_ + 1, 3, $pixel;
+
+            $x__++;
+        }
+        $y__++;
+        $x__ = 0;
+    }
+}
+
 sub _buildChunk {
 	my $type = shift;
 	my $data = shift || "";
@@ -245,7 +304,44 @@ sub _takeApartChunk {
     return ($type, $data);
 }
 
+if( 0 and $0  eq __FILE__ ) {
+    # simple read/write the energy cube which uses paeth and other compression filters (thanks, gimp, not)
+    my $img5 = png::read("jpg/energy.png");
+    # write for inspection
+    my $png = $img5->write;
+    open my $imgfh, '>', "test.png" or die $!;
+    $imgfh->print($png);
+    close $imgfh;
+}
+
 if( $0  eq __FILE__ ) {
+    # test blitting the robot and energy cubes around on the board and saving the modified board
+
+    my $img1 = png::read("jpg/startb_and_spinzone_b.png");
+    my $img2 = png::read("jpg/bot1.png");
+    my $img3 = png::read("jpg/bot2.png");
+    my $img4 = png::read("jpg/bot3.png");
+    my $img5 = png::read("jpg/energy.png");
+
+    $img1->blit($img2, 69 * int rand 15, 69 * int rand 11);
+    $img1->blit($img3, 69 * int rand 15, 69 * int rand 11);
+    $img1->blit($img4, 69 * int rand 15, 69 * int rand 11);
+
+    $img1->blit($img5, 69 * int rand 15, 69 * int rand 11);
+    $img1->blit($img5, 69 * int rand 15, 69 * int rand 11);
+    $img1->blit($img5, 69 * int rand 15, 69 * int rand 11);
+    $img1->blit($img5, 69 * int rand 15, 69 * int rand 11);
+    $img1->blit($img5, 69 * int rand 15, 69 * int rand 11);
+    $img1->blit($img5, 69 * int rand 15, 69 * int rand 11);
+
+    # write for inspection
+    my $png = $img1->write;
+    open my $imgfh, '>', "test.png" or die $!;
+    $imgfh->print($png);
+    close $imgfh;
+}
+
+if( 0 and $0  eq __FILE__ ) {
     require Test::Deep; Test::Deep->import;
     opendir my $dir, 'jpg' or die $!;
     while( my $fn = readdir $dir ) {
