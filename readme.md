@@ -1,6 +1,10 @@
 
 notes.txt in this repo has more info.
 
+rules:
+
+https://www.ultraboardgames.com/robo-rally/game-rules.php
+
 screenshots of each round are posted to, respectively:
 
 http://45.79.14.228:11111/jpg/phase_1.png
