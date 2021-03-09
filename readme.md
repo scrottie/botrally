@@ -1,4 +1,14 @@
 
+notes.txt in this repo has more info.
+
+screenshots of each round are posted to, respectively:
+
+http://45.79.14.228:11111/jpg/phase_1.png
+http://45.79.14.228:11111/jpg/phase_2.png
+http://45.79.14.228:11111/jpg/phase_3.png
+http://45.79.14.228:11111/jpg/phase_4.png
+http://45.79.14.228:11111/jpg/phase_5.png
+
 manual parts of game play:
 
 * placing your robot (including rotating it) 
