@@ -16,6 +16,10 @@ use JSON;
 use Data::Dumper;
 use FindBin '$Bin';
 use Carp;
+use Try::Tiny;
+
+use lib '.';
+use png;
 
 use strict;
 use warnings;
@@ -103,15 +107,6 @@ do {
     }
 };
 
-# bots
-
-for my $i (1..3) {
-    # robots associate themselves with the player moving them, the first time they are moved
-    my $bot = robot->new( front_img => "/jpg/bot$i.png", back_img => "/jpg/bot$i.png", id => ['SmashBot', 'Hulkx90', 'HammerBot']->[$i], );
-    $board->add( $bot ); $board->move_past;
-    push @actions, action->new( type => 2, card => $bot, player_id => 'system', );   # rotate to default starting rotation
-}
-
 # checkpoints
 
 my @checkpoints;
@@ -121,6 +116,18 @@ for my $i (1..5) {
     my $card = checkpoint->new( id => "checkpoint$i", checkpoint_num => $i, front_img => "/jpg/checkpoint$i.png", back_img => "/jpg/checkpoint$i.png", );
     $board->add($card); $board->cur_x += 5;
     push @checkpoints, $card;
+}
+$board->move_past;
+
+# bots
+
+# after checkpoints only so that they appear on top of checkpoints
+
+for my $i (1..3) {
+    # robots associate themselves with the player moving them, the first time they are moved
+    my $bot = robot->new( front_img => "/jpg/bot$i.png", back_img => "/jpg/bot$i.png", id => [undef, 'SmashBot', 'Hulkx90', 'HammerBot']->[$i], );
+    $board->add( $bot ); $board->move_past;
+    push @actions, action->new( type => 2, card => $bot, player_id => 'system', );   # rotate to default starting rotation
 }
 
 # creates
@@ -559,7 +566,7 @@ sub lasers {
                     $missile_callback->($robot, $dir, $objects);
                 } else {
                     $console->log("@{[ $attacker->name ]}'s @{[ $double_barrel_lasers ? 'double-barrel' : '' ]} laser@{[ $double_barrel_lasers ? 's' : '' ]}  hit @{[ $robot->name ]}, dealing spam damage!\n");
-                    $robot->player->take_spam_damage if $robot->player;                 # XXX generalize this to non-robots
+                    $robot->player->take_spam_damage if $robot->player;                 # XXX generalize this to non-robots... take_damage should be a method on the robot, not the player, tho it can relay it to the player if a robot
                     if( $double_barrel_lasers ) {
                         $robot->player->take_spam_damage if $robot->player;                 # XXX generalize this
                     }
@@ -882,6 +889,32 @@ sub simulate {
 
     # XXX push panels, crushers
 
+}
+
+#                                   .__            __   
+#   ______ ____ _____  ______  _____|  |__   _____/  |_ 
+#  /  ___//    \\__  \ \____ \/  ___/  |  \ /  _ \   __\
+#  \___ \|   |  \/ __ \|  |_> >___ \|   Y  (  <_> )  |  
+# /____  >___|  (____  /   __/____  >___|  /\____/|__|  
+#      \/     \/     \/|__|       \/     \/  
+
+# write a png of the board
+
+sub snapshot {
+    my $phase = shift;
+    try {
+        my $board_img = $board->png->clone;
+        my @objects = grep $board->on_the_board($_), $board->cards;                              # objects on the board, including and especially robots
+        for my $obj (sort { $a->z <=> $b->z } @objects) {
+            $board_img->blit($obj->png, 69 * $obj->col, 69 * $obj->row);
+        }
+        open my $imgfh, '>', "$main::Bin/jpg/phase_$phase.png" or die $!;
+        $imgfh->print( $board_img->write );
+        close $imgfh;
+        # $console->log(qq{<a href="/jpg/phase_$phase.png" target="_blank">Phase $phase board image.</a>});  # XXX have to fix escaping/quoting first
+    } catch {
+        warn "generating a board image: $_\n";
+    };
 }
 
 
@@ -1265,6 +1298,7 @@ sub desc {
 package card;
 
 use Want;
+use png;
 
 sub new {
     my $pack = shift; 
@@ -1273,7 +1307,7 @@ sub new {
         @_,
      }, $pack; 
     if( $self->front_img and ( ! $self->card_width or ! $self->card_height ) ) {
-         my $fn = $main::Bin . '/' . $self->front_img;
+         my $fn = $main::Bin . $self->front_img;
          ( $self->card_width, $self->card_height ) = Image::Info::dim( Image::Info::image_info( $fn ) );
          # STDERR->print("detected card size of @{[ $self->card_width ]} x @{[ $self->card_height ]}\n"); 
          STDERR->print("debug: failed to detect height/width for fn $fn id $self->{id}\n") unless $self->card_width and $self->card_height;
@@ -1411,6 +1445,15 @@ sub name {
         return $self->id;
     }
 }
+sub reload_png { my $self = shift; delete $self->{png}; $self->png; }
+sub png {
+    my $self = shift;
+    delete $self->{png} if $self->{last_hid} and $self->{hid} != $self->{last_hid};    # reload data if we've been flipped over.  generally doesn't apply to objects on the board so we keep only one image buffer handy.
+    $self->{last_hid} = $self->{hid};
+    return $self->{png} if $self->{png};
+    $self->{png} = png::read( $main::Bin . $self->image );  # all image paths have a leading / which is a slightly dubious system
+    return $self->{png};
+}
 
 #
 
@@ -1426,9 +1469,13 @@ sub checkpoint_num { $_[0]->{checkpoint_num} }
 sub standing_on {
     my $self = shift;
     my $robot = shift;
-    $console->log("@{[ $robot->name ]} stepped on checkpoint @{[ $self->checkpoint_num ]}.\n");
+    STDERR->print("@{[ $robot->name ]} is standing on checkpoint @{[ $self->checkpoint_num ]}.\n");
     return unless $robot->player;
-    $robot->player->checkpoint = $self->checkpoint_num;
+    # make sure they're doing the checkpoints in sequence
+    if( $robot->player->checkpoint - 1 == $self->checkpoint_num ) {
+        $robot->player->checkpoint = $self->checkpoint_num;
+        $console->log("@{[ $robot->name ]} cleared checkpoint @{[ $self->checkpoint_num ]}.\n");
+    }
     return 1;   # allow robot to step on us
 }
 #
@@ -1715,14 +1762,15 @@ sub dropped_on_us {
     my $player = shift;
     if( $dog->id eq 'dog' ) {
 
-        # STDERR->print("dog\n");
         $console->log("Activation phase!\n");
+
         async {
             my $timer = Coro::Event->timer( interval => 2, );
             my $step = 1;
             while( $dog->overlaps($self) and $step < 6) {
                 STDERR->print("dog.  step $step.\n");
                 main::simulate($step);                                                                 # iterate the simulation
+                main::snapshot($step);                                                                 # generate an image
                 $step++;
                 cede;
                 $timer->next;
@@ -1997,6 +2045,7 @@ sub new {
         cards => [],       # movement cards, which is the player's primary deck they build from
         energy => [],      # energy cubes which are cards that can be picked up when stepped on
         upgrades => [],    # upgrade cards
+        checkpoint => 0,   # last checkpoint done
         @_,
     );
     $board->add($self);

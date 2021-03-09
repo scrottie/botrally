@@ -284,6 +284,16 @@ sub blit {
     }
 }
 
+sub clone {
+    my $img = shift or die;
+    bless {
+        img => $img->{img},    # copy
+        colortype => $img->{colortype},
+        width => $img->{width},
+        height => $img->{height},
+    }, 'png';
+}
+
 sub _buildChunk {
 	my $type = shift;
 	my $data = shift || "";
