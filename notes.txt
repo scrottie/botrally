@@ -428,7 +428,6 @@ o. crushers
 o. some cards are larger than others which gives them away a bit
 o. spam variety; cards that instead of having you draw for a replacement card just have a usual move operation with a percentage chance of working/failing
 o. probably need a console log for each player to tell them about taking spam damage etc
-o. unit test mode where it doesn't $server->loop maybe, for testing game logic
 o. the whole "deck" process of finding a card in a box, taking off the top or taking one, dropping it somewhere else in a staggered fashion, hiding it or unhiding it should be part of a deck class
 o. energy bank pad unhiding cubes
 o. take_spam_damage should be applied to any object hit by a laser with a 0/1 return to indicate whether that object blocks the laser from going further
@@ -436,6 +435,7 @@ o. if we deal ourselves 9 cards then immediately deal 9 more, they go under the 
 o. not fully operational after coming back from storable game snapshot
 o. $card->rowcol($row, $col), $card->xy($x, $y)  that also generate the move action. -- now use in code in most of the places where we set x, then y, then generate an action.
 o. action message type to make something visible again (energy, discarded powerups).
+o. dropping upgrades on the perm discard should dissasociate them from you (done) and make them publicly visible again (todo)
 
 shortlist todo:
 
@@ -445,13 +445,13 @@ o. is the board individual tiles or one big one with a map of special things to 
 o. add homemade movement and spam cards, and shuffle the spam deck: card-subroutine.png card-gotoreg2spam.png card-probablyrightspam.png card-probablyleftspam.png card-variablemovespam.png
 o. build a board image out of tiles and hand out the task of making boards to the players between games
 o. water/liquid leaks with propogating/spreading water, and similarly, fuel leaks, plus fire; water inhibits breaking (requiring bots to track their last forward speed, so going to a move 2 to move 1 would stay at move 2)
-o. dropping upgrades on the perm discard should dissasociate them from you
 o. may make sense to add some duplicate powerups to the deck since it's a reduced set
 o. teleporting on top of another robot isn't handled correctly
+o. more robot from-the-top images
 
 
 
-
+XXX pipes, missiples, oil puddles
 
 XXX CGI is a Continuity dep
 
