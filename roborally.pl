@@ -516,7 +516,7 @@ sub recursive_move {
     $robot->col = $future_col;
     $robot->row = $future_row;
 
-    $console->log( $robot->name . ' moved ' . $orientation_for_deltas->{$x_delta}->{$y_delta} . ' to '. $robot->col . ', ' . $robot->row . "\n");
+    $console->log( $robot->name . ' moved ' . $orientation_for_deltas->{$x_delta}->{$y_delta} . ' to '. $robot->col . ', ' . $robot->row . "\n") if $robot->isa('robot');
     push @actions, action->new( type => 1, card => $robot, player_id => 'simulate', text => $robot->x . ', ' . $robot->y);   # move the card for everyone
 
     if( ! $board->on_the_board($robot) ) {
@@ -754,7 +754,7 @@ sub simulate {
             (my $x_delta, my $y_delta) = $deltas->{$dir}->@*;
             # try to move the robot along the conveyer
             if( recursive_move($robot, $x_delta, $y_delta, \@objects, 1) ) {
-                $console->log("@{[ $robot->name ]} moved $dir by conveyer.\n");
+                $console->log("@{[ $robot->name ]} moved $dir by conveyer.\n") if $robot->isa('robot');
             } else {
                 if( $convey_tries++ > 10 ) {
                     $console->log("Giving up on conveying objects after 10 attempts to postpone conveying an object to try to break deadlock without luck.\n");
@@ -1472,7 +1472,7 @@ sub standing_on {
     STDERR->print("@{[ $robot->name ]} is standing on checkpoint @{[ $self->checkpoint_num ]}.\n");
     return unless $robot->player;
     # make sure they're doing the checkpoints in sequence
-    if( $robot->player->checkpoint - 1 == $self->checkpoint_num ) {
+    if( $robot->player->checkpoint + 1 == $self->checkpoint_num ) {
         $robot->player->checkpoint = $self->checkpoint_num;
         $console->log("@{[ $robot->name ]} cleared checkpoint @{[ $self->checkpoint_num ]}.\n");
     }
